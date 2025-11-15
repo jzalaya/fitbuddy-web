@@ -1,6 +1,5 @@
 const CACHE_NAME = 'fitbuddy-v1';
 const urlsToCache = [
-  '/',
   '/index.html',
   '/css/styles.css',
   '/js/config.js',
@@ -10,15 +9,28 @@ const urlsToCache = [
   '/manifest.json'
 ];
 
-// Install event - cache resources
+// Install event - cache resources with error handling
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        // Cache files individually to handle failures gracefully
+        return Promise.all(
+          urlsToCache.map(url => {
+            return cache.add(url).catch(err => {
+              console.error(`Failed to cache ${url}:`, err);
+              // Continue even if one file fails
+            });
+          })
+        );
+      })
+      .catch(err => {
+        console.error('Cache installation failed:', err);
       })
   );
+  // Force the waiting service worker to become the active service worker
+  self.skipWaiting();
 });
 
 // Fetch event - serve from cache when offline
@@ -66,6 +78,9 @@ self.addEventListener('activate', event => {
           }
         })
       );
+    }).then(() => {
+      // Take control of all clients immediately
+      return self.clients.claim();
     })
   );
 });
