@@ -1,0 +1,32 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#1a1a2e" rx="90"/>
+
+  <!-- Gradient Definition -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a90e2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7b68ee;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Dumbbell Icon -->
+  <g fill="url(#gradient)">
+    <!-- Left weight -->
+    <rect x="60" y="180" width="50" height="152" rx="10"/>
+    <rect x="110" y="200" width="40" height="112" rx="5"/>
+
+    <!-- Bar -->
+    <rect x="150" y="240" width="212" height="32" rx="16"/>
+
+    <!-- Right weight -->
+    <rect x="362" y="200" width="40" height="112" rx="5"/>
+    <rect x="402" y="180" width="50" height="152" rx="10"/>
+
+    <!-- Heart accent -->
+    <path d="M 256 160 C 256 160, 240 145, 220 145 C 200 145, 190 160, 190 175 C 190 195, 256 230, 256 230 C 256 230, 322 195, 322 175 C 322 160, 312 145, 292 145 C 272 145, 256 160, 256 160 Z" fill="#f44336" opacity="0.9"/>
+  </g>
+
+  <!-- FitBuddy Text -->
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">FitBuddy</text>
+</svg>

@@ -1,0 +1,55 @@
+name: Deploy to Public Repository
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - claude/heady-app-google-sheets-01LvPBcFMZ7YXVTiVPwDRVWa
+  workflow_dispatch:
+
+jobs:
+  deploy-to-public:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Clone public repository
+        env:
+          PUBLIC_REPO_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          git clone https://x-access-token:${PUBLIC_REPO_TOKEN}@github.com/jzalaya/fitbuddy-web.git public-repo
+
+      - name: Copy files to public repository
+        run: |
+          # Remove existing files in public repo (except .git)
+          cd public-repo
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cd ..
+
+          # Copy all files except .git directory
+          rsync -av --exclude='.git' --exclude='public-repo' ./ public-repo/
+
+      - name: Commit and push to public repository
+        env:
+          PUBLIC_REPO_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          cd public-repo
+          git add .
+
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Deploy from private repo - $(date +'%Y-%m-%d %H:%M:%S')"
+            git push https://x-access-token:${PUBLIC_REPO_TOKEN}@github.com/jzalaya/fitbuddy-web.git master
+            echo "✅ Successfully deployed to public repository"
+          fi

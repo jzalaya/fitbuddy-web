@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>FitBuddy - Tu Entrenador Personal</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon.svg">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header id="app-header">
+        <div class="header-content">
+            <h1 id="header-title">Entrenamientos</h1>
+            <button id="add-button" class="btn-icon">+</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content">
+        <!-- Vista: Entrenamientos -->
+        <section id="view-workouts" class="view active">
+            <div id="workouts-list" class="workouts-list">
+                <div class="empty-state">
+                    <div class="empty-icon">💪</div>
+                    <h2>No hay entrenamientos planificados</h2>
+                    <p>Toca el botón + para crear tu primer entrenamiento</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vista: Iniciar Entrenamiento -->
+        <section id="view-start-workout" class="view">
+            <div id="active-workout" class="active-workout">
+                <!-- Contenido dinámico -->
+            </div>
+        </section>
+
+        <!-- Vista: Mediciones -->
+        <section id="view-measurements" class="view">
+            <div class="measurements-header">
+                <button id="add-measurement-btn" class="btn-primary">+ Nueva Medición</button>
+            </div>
+            <div id="measurements-list" class="measurements-list">
+                <!-- Contenido dinámico -->
+            </div>
+        </section>
+
+        <!-- Vista: Estadísticas -->
+        <section id="view-stats" class="view">
+            <div class="stats-container">
+                <h2>Estadísticas de Progreso</h2>
+                <div id="charts-container">
+                    <!-- Gráficos dinámicos -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Crear/Editar Entrenamiento -->
+    <div id="modal-workout" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nuevo Entrenamiento</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="workout-name" placeholder="Nombre del entrenamiento" class="input-field">
+                <textarea id="workout-notes" placeholder="Notas (opcional)" class="input-field"></textarea>
+
+                <h3>Ejercicios</h3>
+                <div id="exercises-list-modal">
+                    <!-- Lista de ejercicios -->
+                </div>
+                <button id="add-exercise-btn" class="btn-secondary">+ Añadir Ejercicio</button>
+            </div>
+            <div class="modal-footer">
+                <button id="save-workout-btn" class="btn-primary">Guardar Entrenamiento</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Buscar Ejercicio -->
+    <div id="modal-exercise-search" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Buscar Ejercicio</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="exercise-search" placeholder="Buscar ejercicio..." class="input-field search-input">
+                <div id="exercise-results" class="exercise-results">
+                    <!-- Resultados de búsqueda -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Registrar Serie -->
+    <div id="modal-set" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar Serie</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Peso (kg)</label>
+                    <input type="number" id="set-weight" step="0.5" class="input-field">
+                </div>
+                <div class="input-group">
+                    <label>Repeticiones</label>
+                    <input type="number" id="set-reps" class="input-field">
+                </div>
+                <div class="input-group">
+                    <label>RIR (Repeticiones en Reserva)</label>
+                    <input type="number" id="set-rir" min="0" max="10" class="input-field">
+                </div>
+                <div class="input-group">
+                    <label>Tipo de Serie</label>
+                    <select id="set-type" class="input-field">
+                        <option value="normal">Normal</option>
+                        <option value="warmup">Calentamiento</option>
+                        <option value="dropset">Bajada</option>
+                        <option value="failure">Fallo</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Notas</label>
+                    <textarea id="set-notes" class="input-field" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-set-btn" class="btn-primary">Guardar Serie</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Nueva Medición -->
+    <div id="modal-measurement" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Nueva Medición</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label>Peso (kg)</label>
+                    <input type="number" id="measurement-weight" step="0.1" class="input-field">
+                </div>
+                <div class="input-group">
+                    <label>Cintura (cm)</label>
+                    <input type="number" id="measurement-waist" step="0.1" class="input-field">
+                </div>
+                <div class="input-group">
+                    <label>Pecho (cm)</label>
+                    <input type="number" id="measurement-chest" step="0.1" class="input-field">
+                </div>
+                <div class="input-group">
+                    <label>Bíceps (cm)</label>
+                    <input type="number" id="measurement-biceps" step="0.1" class="input-field">
+                </div>
+                <div class="input-group">
+                    <label>Cuádriceps (cm)</label>
+                    <input type="number" id="measurement-quads" step="0.1" class="input-field">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-measurement-btn" class="btn-primary">Guardar Medición</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav">
+        <button class="nav-item active" data-view="workouts">
+            <span class="nav-icon">🏋️</span>
+            <span class="nav-label">Entrenamientos</span>
+        </button>
+        <button class="nav-item" data-view="measurements">
+            <span class="nav-icon">📏</span>
+            <span class="nav-label">Mediciones</span>
+        </button>
+        <button class="nav-item" data-view="stats">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Estadísticas</span>
+        </button>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/sheets.js"></script>
+    <script src="js/exercises.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
+</body>
+</html>

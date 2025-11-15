@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Editor directories and files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Environment variables (si decides usar .env)
+.env
+.env.local
+
+# Node modules (si decides añadir npm en el futuro)
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Temporary files from deployment
+public-repo/

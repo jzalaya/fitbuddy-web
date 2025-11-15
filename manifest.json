@@ -1,0 +1,20 @@
+{
+  "name": "FitBuddy - Tu Entrenador Personal",
+  "short_name": "FitBuddy",
+  "description": "Aplicación de seguimiento de entrenamientos y mediciones corporales con integración a Google Sheets",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f1e",
+  "theme_color": "#1a1a2e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "sports"],
+  "screenshots": []
+}
