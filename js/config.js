@@ -1,13 +1,15 @@
 // Google Sheets API Configuration
+// IMPORTANT: These values are replaced by GitHub Actions during deployment
+// Do NOT hardcode real API keys here. Use GitHub Secrets instead.
 const CONFIG = {
     // Google Sheets API
-    apiKey: 'YOUR_API_KEY', // Reemplazar con tu API Key
-    clientId: 'YOUR_CLIENT_ID', // Reemplazar con tu Client ID
+    apiKey: '', // Replaced during deployment from GitHub Secrets
+    clientId: '', // Replaced during deployment from GitHub Secrets
     discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
     scope: 'https://www.googleapis.com/auth/spreadsheets',
 
     // Spreadsheet Configuration
-    spreadsheetId: 'YOUR_SPREADSHEET_ID', // Reemplazar con el ID de tu hoja "Fitness Coach"
+    spreadsheetId: '', // Replaced during deployment from GitHub Secrets
 
     // Sheet Names
     sheets: {
@@ -18,12 +20,15 @@ const CONFIG = {
 
     // Exercise API - Using ExerciseDB API (free)
     exerciseApiUrl: 'https://exercisedb.p.rapidapi.com',
-    exerciseApiKey: 'YOUR_RAPIDAPI_KEY' // Reemplazar con tu RapidAPI Key para ExerciseDB
+    exerciseApiKey: '' // Optional: Replaced during deployment from GitHub Secrets
 };
 
 // Helper function to check if configuration is complete
 function isConfigured() {
-    return CONFIG.apiKey !== 'YOUR_API_KEY' &&
-           CONFIG.clientId !== 'YOUR_CLIENT_ID' &&
-           CONFIG.spreadsheetId !== 'YOUR_SPREADSHEET_ID';
+    return CONFIG.apiKey !== '' &&
+           CONFIG.clientId !== '' &&
+           CONFIG.spreadsheetId !== '' &&
+           CONFIG.apiKey !== '' &&
+           CONFIG.clientId !== '' &&
+           CONFIG.spreadsheetId !== '';
 }

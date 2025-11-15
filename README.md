@@ -47,20 +47,23 @@ FitBuddy es una aplicación web progresiva (PWA) que replica la funcionalidad de
    https://docs.google.com/spreadsheets/d/[ESTE_ES_EL_ID]/edit
    ```
 
-### 3. Configurar la Aplicación
+### 3. Configurar GitHub Secrets
 
-Edita el archivo `js/config.js`:
+Las claves de API se manejan de forma segura usando GitHub Secrets. **NO edites el archivo `js/config.js` directamente**.
 
-```javascript
-const CONFIG = {
-    apiKey: 'TU_API_KEY_AQUI',
-    clientId: 'TU_CLIENT_ID_AQUI',
-    spreadsheetId: 'TU_SPREADSHEET_ID_AQUI',
+1. Ve a tu repositorio en GitHub
+2. Click en **Settings** > **Secrets and variables** > **Actions**
+3. Click en **New repository secret**
+4. Agrega los siguientes secrets:
 
-    // Opcional: API de ejercicios (si no la configuras, usará ejercicios predefinidos)
-    exerciseApiKey: 'TU_RAPIDAPI_KEY' // De https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb
-};
-```
+| Secret Name | Descripción | Requerido |
+|-------------|-------------|-----------|
+| `GOOGLE_API_KEY` | Tu Google API Key | ✅ Sí |
+| `GOOGLE_CLIENT_ID` | Tu Google OAuth 2.0 Client ID | ✅ Sí |
+| `SPREADSHEET_ID` | El ID de tu hoja de Google Sheets | ✅ Sí |
+| `RAPIDAPI_KEY` | Tu RapidAPI Key para ExerciseDB | ❌ Opcional |
+
+**Importante:** Los secrets se inyectan automáticamente durante el deployment. El archivo `js/config.js` usa placeholders que se reemplazan por los valores reales cuando se publica la app.
 
 ### 4. (Opcional) Configurar API de Ejercicios
 
@@ -69,7 +72,7 @@ Para tener acceso a miles de ejercicios con videos y fotos:
 1. Regístrate en [RapidAPI](https://rapidapi.com/)
 2. Suscríbete a [ExerciseDB API](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb) (tiene plan gratuito)
 3. Copia tu RapidAPI Key
-4. Añádela en `js/config.js`
+4. Añádela como secret `RAPIDAPI_KEY` en GitHub (ver paso 3)
 
 > **Nota**: Si no configuras esto, FitBuddy usará una base de datos predefinida con los ejercicios más comunes.
 
@@ -169,6 +172,7 @@ chmod +x generate-icons.sh
 ## 📝 Notas Importantes
 
 - **Privacidad**: Todos tus datos están en TU hoja de Google Sheets. Nada se guarda en servidores externos.
+- **Seguridad**: Las claves de API se manejan de forma segura usando GitHub Secrets. Nunca se exponen en el código fuente.
 - **Offline**: Gracias a PWA, puedes usar la app sin conexión (excepto para sincronizar con Google Sheets)
 - **Compatibilidad**: Optimizado para iOS Safari, pero funciona en cualquier navegador moderno
 

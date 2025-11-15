@@ -28,6 +28,22 @@ jobs:
         run: |
           git clone https://x-access-token:${PUBLIC_REPO_TOKEN}@github.com/jzalaya/fitbuddy-web.git public-repo
 
+      - name: Inject secrets into config
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: |
+          # Create a temporary copy of config.js with secrets injected
+          sed -e "s|__GOOGLE_API_KEY__|${GOOGLE_API_KEY}|g" \
+              -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
+              -e "s|__SPREADSHEET_ID__|${SPREADSHEET_ID}|g" \
+              -e "s|__RAPIDAPI_KEY__|${RAPIDAPI_KEY}|g" \
+              js/config.js > js/config.js.tmp
+          mv js/config.js.tmp js/config.js
+          echo "✅ Secrets injected into config.js"
+
       - name: Copy files to public repository
         run: |
           # Remove existing files in public repo (except .git)
