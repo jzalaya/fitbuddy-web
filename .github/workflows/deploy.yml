@@ -1,32 +1,38 @@
-name: Deploy to Public Repository
+# Este archivo debe copiarse al repositorio público fitbuddy-web
+# Ubicación: .github/workflows/deploy.yml
+#
+# IMPORTANTE: Asegúrate de configurar los siguientes secrets en el repositorio público:
+# - GOOGLE_API_KEY: Tu API key de Google
+# - GOOGLE_CLIENT_ID: Tu Client ID de Google OAuth
+# - SPREADSHEET_ID: El ID de tu Google Spreadsheet
+# - RAPIDAPI_KEY: Tu API key de RapidAPI (opcional)
+
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches:
       - master
-      - main
-      - claude/heady-app-google-sheets-01LvPBcFMZ7YXVTiVPwDRVWa
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
-  deploy-to-public:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout private repository
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Configure Git
-        run: |
-          git config --global user.name "GitHub Actions Bot"
-          git config --global user.email "actions@github.com"
-
-      - name: Clone public repository
-        env:
-          PUBLIC_REPO_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
-        run: |
-          git clone https://x-access-token:${PUBLIC_REPO_TOKEN}@github.com/jzalaya/fitbuddy-web.git public-repo
 
       - name: Inject secrets into config
         env:
@@ -35,37 +41,21 @@ jobs:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
         run: |
-          # Create a temporary copy of config.js with secrets injected
-          sed -e "s|__GOOGLE_API_KEY__|${GOOGLE_API_KEY}|g" \
-              -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
-              -e "s|__SPREADSHEET_ID__|${SPREADSHEET_ID}|g" \
-              -e "s|__RAPIDAPI_KEY__|${RAPIDAPI_KEY}|g" \
-              js/config.js > js/config.js.tmp
-          mv js/config.js.tmp js/config.js
+          # Inject secrets into config.js
+          sed -i "s|__GOOGLE_API_KEY__|${GOOGLE_API_KEY}|g" js/config.js
+          sed -i "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" js/config.js
+          sed -i "s|__SPREADSHEET_ID__|${SPREADSHEET_ID}|g" js/config.js
+          sed -i "s|__RAPIDAPI_KEY__|${RAPIDAPI_KEY}|g" js/config.js
           echo "✅ Secrets injected into config.js"
 
-      - name: Copy files to public repository
-        run: |
-          # Remove existing files in public repo (except .git)
-          cd public-repo
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-          cd ..
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
 
-          # Copy all files except .git directory
-          rsync -av --exclude='.git' --exclude='public-repo' ./ public-repo/
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
 
-      - name: Commit and push to public repository
-        env:
-          PUBLIC_REPO_TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
-        run: |
-          cd public-repo
-          git add .
-
-          # Check if there are changes to commit
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Deploy from private repo - $(date +'%Y-%m-%d %H:%M:%S')"
-            git push https://x-access-token:${PUBLIC_REPO_TOKEN}@github.com/jzalaya/fitbuddy-web.git master
-            echo "✅ Successfully deployed to public repository"
-          fi
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
