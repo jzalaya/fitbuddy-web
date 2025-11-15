@@ -1,11 +1,8 @@
 # Este archivo debe copiarse al repositorio público fitbuddy-web
 # Ubicación: .github/workflows/deploy.yml
 #
-# IMPORTANTE: Asegúrate de configurar los siguientes secrets en el repositorio público:
-# - GOOGLE_API_KEY: Tu API key de Google
-# - GOOGLE_CLIENT_ID: Tu Client ID de Google OAuth
-# - SPREADSHEET_ID: El ID de tu Google Spreadsheet
-# - RAPIDAPI_KEY: Tu API key de RapidAPI (opcional)
+# NOTA: Los secrets ya vienen inyectados desde el repositorio privado
+# No es necesario configurar secrets en este repositorio
 
 name: Deploy to GitHub Pages
 
@@ -33,20 +30,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Inject secrets into config
-        env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
-        run: |
-          # Inject secrets into config.js
-          sed -i "s|__GOOGLE_API_KEY__|${GOOGLE_API_KEY}|g" js/config.js
-          sed -i "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" js/config.js
-          sed -i "s|__SPREADSHEET_ID__|${SPREADSHEET_ID}|g" js/config.js
-          sed -i "s|__RAPIDAPI_KEY__|${RAPIDAPI_KEY}|g" js/config.js
-          echo "✅ Secrets injected into config.js"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
