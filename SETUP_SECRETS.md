@@ -24,7 +24,19 @@ Si ves el mensaje **"Por favor, configura las credenciales de Google Sheets en j
    - Haz clic en "+ CREATE CREDENTIALS" → "OAuth client ID"
    - Tipo de aplicación: "Web application"
    - Authorized JavaScript origins: Agrega `https://jzalaya.github.io`
-   - Copia el Client ID generado (la necesitarás después)
+   - Haz clic en "Create"
+   - **⚠️ IMPORTANTE**: Copia el **Client ID** (NO el Client Secret)
+
+   **🚨 ERROR COMÚN - Client ID vs Client Secret:**
+   ```
+   ✅ Client ID (CORRECTO - úsalo):
+      123456789-abcdefghijklmnop.apps.googleusercontent.com
+
+   ❌ Client Secret (INCORRECTO - NO uses esto):
+      GOCSPX-xxxxxxxxxxxxxxx
+   ```
+
+   **El Client ID termina en `.apps.googleusercontent.com`**
 
 ### 2. Crear y configurar Google Spreadsheet
 
@@ -47,13 +59,18 @@ Si ves el mensaje **"Por favor, configura las credenciales de Google Sheets en j
 3. En el menú lateral, selecciona **Secrets and variables** → **Actions**
 4. Agrega los siguientes secretos haciendo clic en "New repository secret":
 
-| Nombre del Secret | Valor | Requerido |
-|------------------|-------|-----------|
-| `GOOGLE_API_KEY` | Tu API Key de Google Cloud | ✅ Sí |
-| `GOOGLE_CLIENT_ID` | Tu OAuth 2.0 Client ID | ✅ Sí |
-| `SPREADSHEET_ID` | El ID de tu Google Sheet | ✅ Sí |
-| `RAPIDAPI_KEY` | Tu RapidAPI Key (opcional) | ⚠️ Opcional |
-| `PUBLIC_REPO_TOKEN` | Ya configurado | ✅ Ya existe |
+| Nombre del Secret | Valor | Formato Esperado | Requerido |
+|------------------|-------|------------------|-----------|
+| `GOOGLE_API_KEY` | Tu API Key de Google Cloud | `AIzaSy...` | ✅ Sí |
+| `GOOGLE_CLIENT_ID` | Tu OAuth 2.0 **Client ID** ⚠️ | `xxxxx.apps.googleusercontent.com` | ✅ Sí |
+| `SPREADSHEET_ID` | El ID de tu Google Sheet | `1-abc...xyz` | ✅ Sí |
+| `RAPIDAPI_KEY` | Tu RapidAPI Key (opcional) | Cualquiera | ⚠️ Opcional |
+| `PUBLIC_REPO_TOKEN` | Ya configurado | - | ✅ Ya existe |
+
+**⚠️ IMPORTANTE**:
+- `GOOGLE_CLIENT_ID` debe ser el **Client ID**, NO el Client Secret
+- El Client ID termina en `.apps.googleusercontent.com`
+- NO uses valores que empiecen con `GOCSPX-` (eso es el secret)
 
 ### 4. Ejecutar el deployment
 
@@ -73,6 +90,21 @@ Una vez configurados los secretos:
 
 ## Troubleshooting
 
+### ❌ El workflow falla con "ERROR: GOOGLE_CLIENT_ID has wrong format!"
+
+**Este es el error más común** - Significa que usaste el Client Secret en lugar del Client ID.
+
+**Solución:**
+1. Ve a [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials)
+2. Encuentra tu OAuth 2.0 Client ID en la lista
+3. Haz clic en el nombre para ver los detalles
+4. Verás dos valores:
+   - **Client ID**: `123456789-abc...xyz.apps.googleusercontent.com` ← **Copia ESTE**
+   - **Client secret**: `GOCSPX-xxxxxxxxxxxxxxx` ← NO copies este
+5. Ve a GitHub: Settings → Secrets and variables → Actions
+6. Edita el secret `GOOGLE_CLIENT_ID` y pega el Client ID correcto (el que termina en `.apps.googleusercontent.com`)
+7. Vuelve a ejecutar el workflow
+
 ### El workflow falla con "ERROR: GOOGLE_API_KEY secret is not configured!"
 - Verifica que hayas agregado todos los secretos necesarios en Settings → Secrets and variables → Actions
 - Asegúrate de que los nombres sean exactamente como se indica (case-sensitive)
@@ -85,6 +117,7 @@ Una vez configurados los secretos:
 ### Error de autenticación de Google
 - Verifica que hayas agregado `https://jzalaya.github.io` a los "Authorized JavaScript origins" en Google Cloud Console
 - Asegúrate de que la Google Sheets API esté habilitada
+- Confirma que estás usando el **Client ID** y no el Client Secret
 
 ## Opcional: RapidAPI Key para ejercicios
 
