@@ -5,6 +5,7 @@ class SheetsManager {
         this.isInitialized = false;
         this.accessToken = null;
         this.tokenClient = null;
+        this.tokenExpiresAt = null;
     }
 
     // Initialize Google API
@@ -44,13 +45,60 @@ class SheetsManager {
                     this.isSignedIn = false;
                     return;
                 }
-                this.accessToken = response.access_token;
-                this.isSignedIn = true;
-                gapi.client.setToken({ access_token: this.accessToken });
+                this.saveToken(response.access_token, response.expires_in);
             },
         });
 
         this.isInitialized = true;
+
+        // Try to restore saved token
+        this.restoreToken();
+    }
+
+    // Save token to localStorage
+    saveToken(accessToken, expiresIn) {
+        this.accessToken = accessToken;
+        this.tokenExpiresAt = Date.now() + (expiresIn * 1000);
+        this.isSignedIn = true;
+
+        // Save to localStorage
+        localStorage.setItem('google_access_token', accessToken);
+        localStorage.setItem('google_token_expires_at', this.tokenExpiresAt.toString());
+
+        gapi.client.setToken({ access_token: this.accessToken });
+    }
+
+    // Restore token from localStorage
+    restoreToken() {
+        const savedToken = localStorage.getItem('google_access_token');
+        const expiresAt = localStorage.getItem('google_token_expires_at');
+
+        if (savedToken && expiresAt) {
+            const expiresAtNum = parseInt(expiresAt);
+
+            // Check if token is still valid (with 5 minute buffer)
+            if (Date.now() < expiresAtNum - (5 * 60 * 1000)) {
+                this.accessToken = savedToken;
+                this.tokenExpiresAt = expiresAtNum;
+                this.isSignedIn = true;
+                gapi.client.setToken({ access_token: this.accessToken });
+                console.log('Token restored from localStorage');
+                return true;
+            } else {
+                // Token expired, clear it
+                this.clearToken();
+            }
+        }
+        return false;
+    }
+
+    // Clear saved token
+    clearToken() {
+        localStorage.removeItem('google_access_token');
+        localStorage.removeItem('google_token_expires_at');
+        this.accessToken = null;
+        this.tokenExpiresAt = null;
+        this.isSignedIn = false;
     }
 
     // Sign in to Google
@@ -58,6 +106,13 @@ class SheetsManager {
         return new Promise((resolve, reject) => {
             if (!this.tokenClient) {
                 reject(new Error('Token client not initialized'));
+                return;
+            }
+
+            // Check if we already have a valid token
+            if (this.isSignedIn && this.accessToken && this.tokenExpiresAt > Date.now()) {
+                console.log('Already signed in with valid token');
+                resolve(true);
                 return;
             }
 
@@ -69,13 +124,18 @@ class SheetsManager {
 
                 if (response.error) {
                     console.error('Error signing in:', response);
+
+                    // If silent sign-in fails, try with prompt
+                    if (response.error === 'popup_closed' || response.error === 'access_denied') {
+                        reject(response);
+                        return;
+                    }
+
                     reject(response);
                     return;
                 }
 
-                this.accessToken = response.access_token;
-                this.isSignedIn = true;
-                gapi.client.setToken({ access_token: this.accessToken });
+                this.saveToken(response.access_token, response.expires_in);
 
                 // Call original callback if it exists
                 if (originalCallback) {
@@ -85,7 +145,8 @@ class SheetsManager {
                 resolve(true);
             };
 
-            // Request access token
+            // Try to request access token silently first
+            // If user is already signed in to Google, this won't show a popup
             this.tokenClient.requestAccessToken({ prompt: '' });
         });
     }
@@ -97,14 +158,13 @@ class SheetsManager {
                 console.log('Token revoked');
             });
         }
-        this.accessToken = null;
-        this.isSignedIn = false;
+        this.clearToken();
         gapi.client.setToken(null);
     }
 
     // Read data from a sheet
     async readSheet(sheetName, range = 'A:Z') {
-        if (!this.isSignedIn) {
+        if (!this.isSignedIn || !this.accessToken || this.tokenExpiresAt <= Date.now()) {
             await this.signIn();
         }
 
@@ -116,6 +176,20 @@ class SheetsManager {
 
             return response.result.values || [];
         } catch (error) {
+            // If token is invalid, try to sign in again
+            if (error.status === 401 || error.status === 403) {
+                console.log('Token invalid, signing in again...');
+                this.clearToken();
+                await this.signIn();
+
+                // Retry the request
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: CONFIG.spreadsheetId,
+                    range: `${sheetName}!${range}`
+                });
+                return response.result.values || [];
+            }
+
             console.error('Error reading sheet:', error);
             throw error;
         }
@@ -123,7 +197,7 @@ class SheetsManager {
 
     // Write data to a sheet
     async writeSheet(sheetName, range, values) {
-        if (!this.isSignedIn) {
+        if (!this.isSignedIn || !this.accessToken || this.tokenExpiresAt <= Date.now()) {
             await this.signIn();
         }
 
@@ -137,6 +211,22 @@ class SheetsManager {
 
             return response.result;
         } catch (error) {
+            // If token is invalid, try to sign in again
+            if (error.status === 401 || error.status === 403) {
+                console.log('Token invalid, signing in again...');
+                this.clearToken();
+                await this.signIn();
+
+                // Retry the request
+                const response = await gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: CONFIG.spreadsheetId,
+                    range: `${sheetName}!${range}`,
+                    valueInputOption: 'USER_ENTERED',
+                    resource: { values }
+                });
+                return response.result;
+            }
+
             console.error('Error writing to sheet:', error);
             throw error;
         }
@@ -144,7 +234,7 @@ class SheetsManager {
 
     // Append data to a sheet
     async appendSheet(sheetName, values) {
-        if (!this.isSignedIn) {
+        if (!this.isSignedIn || !this.accessToken || this.tokenExpiresAt <= Date.now()) {
             await this.signIn();
         }
 
@@ -159,6 +249,23 @@ class SheetsManager {
 
             return response.result;
         } catch (error) {
+            // If token is invalid, try to sign in again
+            if (error.status === 401 || error.status === 403) {
+                console.log('Token invalid, signing in again...');
+                this.clearToken();
+                await this.signIn();
+
+                // Retry the request
+                const response = await gapi.client.sheets.spreadsheets.values.append({
+                    spreadsheetId: CONFIG.spreadsheetId,
+                    range: `${sheetName}!A:Z`,
+                    valueInputOption: 'USER_ENTERED',
+                    insertDataOption: 'INSERT_ROWS',
+                    resource: { values }
+                });
+                return response.result;
+            }
+
             console.error('Error appending to sheet:', error);
             throw error;
         }

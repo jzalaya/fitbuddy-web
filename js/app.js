@@ -234,7 +234,13 @@ class FitBuddyApp {
 
         container.innerHTML = this.workoutPlans.map(plan => `
             <div class="workout-card" data-id="${plan.id}">
-                <h3>${plan.name}</h3>
+                <div class="workout-card-header">
+                    <h3>${plan.name}</h3>
+                    <div class="workout-card-actions">
+                        <button class="btn-icon-small edit-workout" data-id="${plan.id}" title="Editar">✏️</button>
+                        <button class="btn-icon-small delete-workout" data-id="${plan.id}" title="Borrar">🗑️</button>
+                    </div>
+                </div>
                 <p class="workout-info">${plan.notes || 'Sin notas'}</p>
                 <div class="exercise-count">
                     <span>📝</span>
@@ -243,11 +249,33 @@ class FitBuddyApp {
             </div>
         `).join('');
 
-        // Add click listeners
+        // Add click listeners for starting workout
         container.querySelectorAll('.workout-card').forEach(card => {
-            card.addEventListener('click', () => {
+            card.addEventListener('click', (e) => {
+                // Don't start workout if clicking on action buttons
+                if (e.target.closest('.workout-card-actions')) {
+                    return;
+                }
                 const planId = card.dataset.id;
                 this.startWorkout(planId);
+            });
+        });
+
+        // Add listeners for edit buttons
+        container.querySelectorAll('.edit-workout').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const planId = e.currentTarget.dataset.id;
+                this.editWorkout(planId);
+            });
+        });
+
+        // Add listeners for delete buttons
+        container.querySelectorAll('.delete-workout').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const planId = e.currentTarget.dataset.id;
+                this.deleteWorkout(planId);
             });
         });
     }
@@ -322,6 +350,38 @@ class FitBuddyApp {
         this.showLoading(false);
     }
 
+    editWorkout(planId) {
+        const plan = this.workoutPlans.find(p => p.id === planId);
+        if (!plan) return;
+
+        // Open modal with existing plan data
+        this.openWorkoutModal(JSON.parse(JSON.stringify(plan))); // Deep copy
+    }
+
+    async deleteWorkout(planId) {
+        const plan = this.workoutPlans.find(p => p.id === planId);
+        if (!plan) return;
+
+        // Confirm deletion
+        if (!confirm(`¿Estás seguro de que quieres borrar "${plan.name}"?`)) {
+            return;
+        }
+
+        this.showLoading(true);
+
+        const success = await sheetsManager.deleteWorkoutPlan(planId);
+
+        if (success) {
+            this.showToast('Entrenamiento borrado', 'success');
+            await this.loadData();
+            this.renderWorkouts();
+        } else {
+            this.showToast('Error al borrar el entrenamiento', 'error');
+        }
+
+        this.showLoading(false);
+    }
+
     startWorkout(planId) {
         const plan = this.workoutPlans.find(p => p.id === planId);
         if (!plan) return;
@@ -373,9 +433,9 @@ class FitBuddyApp {
                                     <span>${set.weight} kg</span>
                                     <span>×</span>
                                     <span>${set.reps} reps</span>
-                                    ${set.rir !== undefined ? `<span>RIR ${set.rir}</span>` : ''}
                                 </div>
                                 ${set.type !== 'normal' ? `<span class="set-badge ${set.type}">${set.type}</span>` : ''}
+                                ${set.notes ? `<span style="color: var(--text-secondary); font-size: 12px; margin-left: 8px;">📝</span>` : ''}
                             </div>
                         `).join('') : '<p style="color: var(--text-secondary); font-size: 14px;">No hay series registradas</p>'}
                     </div>
@@ -406,7 +466,6 @@ class FitBuddyApp {
         // Reset form
         document.getElementById('set-weight').value = '';
         document.getElementById('set-reps').value = '';
-        document.getElementById('set-rir').value = '';
         document.getElementById('set-type').value = 'normal';
         document.getElementById('set-notes').value = '';
 
@@ -416,7 +475,6 @@ class FitBuddyApp {
     async saveSet() {
         const weight = parseFloat(document.getElementById('set-weight').value) || 0;
         const reps = parseInt(document.getElementById('set-reps').value) || 0;
-        const rir = parseInt(document.getElementById('set-rir').value);
         const type = document.getElementById('set-type').value;
         const notes = document.getElementById('set-notes').value.trim();
 
@@ -426,7 +484,6 @@ class FitBuddyApp {
         }
 
         const set = { weight, reps, type, notes };
-        if (!isNaN(rir)) set.rir = rir;
 
         const exercise = this.currentWorkout.exercises[this.currentExerciseIndex];
         if (!exercise.sets) exercise.sets = [];
@@ -441,7 +498,7 @@ class FitBuddyApp {
             set: exercise.sets.length,
             weight: weight,
             reps: reps,
-            additionalData: { type, rir, notes }
+            additionalData: { type, notes }
         };
 
         this.showLoading(true);

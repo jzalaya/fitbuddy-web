@@ -137,6 +137,49 @@ body {
     background: var(--background-hover);
 }
 
+.workout-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.workout-card-header h3 {
+    margin: 0;
+    font-size: 18px;
+    flex: 1;
+}
+
+.workout-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: 12px;
+}
+
+.btn-icon-small {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.btn-icon-small:hover {
+    background: var(--background-hover);
+    border-color: var(--primary-color);
+}
+
+.btn-icon-small:active {
+    transform: scale(0.95);
+}
+
 .workout-card h3 {
     font-size: 18px;
     margin-bottom: 8px;
