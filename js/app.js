@@ -9,6 +9,14 @@ class FitBuddyApp {
         this.currentExerciseIndex = null;
         this.charts = {};
 
+        // Exercise configuration state
+        this.exerciseBeingConfigured = null;
+        this.plannedSets = [];
+
+        // Rest timer state
+        this.restTimerInterval = null;
+        this.restTimeRemaining = 0;
+
         this.init();
     }
 
@@ -144,6 +152,20 @@ class FitBuddyApp {
 
         document.getElementById('add-measurement-btn').addEventListener('click', () => {
             this.openMeasurementModal();
+        });
+
+        // Exercise configuration modal
+        document.getElementById('add-planned-set-btn').addEventListener('click', () => {
+            this.addPlannedSet();
+        });
+
+        document.getElementById('save-exercise-config-btn').addEventListener('click', () => {
+            this.saveExerciseConfiguration();
+        });
+
+        // Rest timer modal
+        document.getElementById('skip-rest-btn').addEventListener('click', () => {
+            this.skipRest();
         });
     }
 
@@ -327,8 +349,21 @@ class FitBuddyApp {
                 <div class="exercise-item">
                     <div class="exercise-header">
                         <span class="exercise-name">${exercise.name}</span>
+                        ${exercise.restTime ? `<span style="color: var(--text-secondary); font-size: 14px;">⏱️ ${exercise.restTime}s</span>` : ''}
                     </div>
                     <p class="exercise-notes">${exercise.description || ''}</p>
+                    ${exercise.notes ? `<p style="color: var(--text-secondary); font-size: 14px; margin-top: 8px; font-style: italic;">${exercise.notes}</p>` : ''}
+
+                    ${exercise.plannedSets && exercise.plannedSets.length > 0 ? `
+                        <div style="background: var(--background-dark); padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                            <h4 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Series Planificadas:</h4>
+                            ${exercise.plannedSets.map((plannedSet, idx) => `
+                                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">
+                                    ${idx + 1}. ${plannedSet.weight}kg × ${plannedSet.reps} reps ${plannedSet.rir ? `(RIR ${plannedSet.rir})` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
 
                     <div class="sets-container">
                         ${exercise.sets && exercise.sets.length > 0 ? exercise.sets.map((set, setIndex) => `
@@ -416,6 +451,11 @@ class FitBuddyApp {
         this.closeModal('modal-set');
         this.renderActiveWorkout();
         this.showToast('Serie guardada', 'success');
+
+        // Start rest timer if configured
+        if (exercise.restTime && exercise.restTime > 0) {
+            this.startRestTimer(exercise.restTime, exercise.name);
+        }
     }
 
     async finishWorkout() {
@@ -424,6 +464,103 @@ class FitBuddyApp {
         this.currentExerciseIndex = null;
         this.switchView('workouts');
         this.showToast('¡Entrenamiento completado! 💪', 'success');
+    }
+
+    // REST TIMER
+    startRestTimer(seconds, exerciseName) {
+        // Clear any existing timer
+        if (this.restTimerInterval) {
+            clearInterval(this.restTimerInterval);
+        }
+
+        this.restTimeRemaining = seconds;
+
+        // Update display
+        document.getElementById('rest-timer-exercise').textContent = exerciseName;
+        this.updateRestTimerDisplay();
+
+        // Open modal
+        this.openModal('modal-rest-timer');
+
+        // Start countdown
+        this.restTimerInterval = setInterval(() => {
+            this.restTimeRemaining--;
+
+            if (this.restTimeRemaining <= 0) {
+                this.finishRestTimer();
+            } else {
+                this.updateRestTimerDisplay();
+            }
+        }, 1000);
+    }
+
+    updateRestTimerDisplay() {
+        const display = document.getElementById('rest-timer-display');
+        const minutes = Math.floor(this.restTimeRemaining / 60);
+        const seconds = this.restTimeRemaining % 60;
+
+        display.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        // Change color based on time remaining
+        display.classList.remove('warning', 'finished');
+        if (this.restTimeRemaining <= 10) {
+            display.classList.add('warning');
+        }
+    }
+
+    finishRestTimer() {
+        clearInterval(this.restTimerInterval);
+        this.restTimerInterval = null;
+
+        const display = document.getElementById('rest-timer-display');
+        display.textContent = '0:00';
+        display.classList.remove('warning');
+        display.classList.add('finished');
+
+        // Play notification sound and vibrate
+        this.playNotificationSound();
+        if ('vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200]);
+        }
+
+        // Show notification
+        this.showToast('¡Tiempo de descanso completado!', 'success');
+
+        // Auto-close after 3 seconds
+        setTimeout(() => {
+            this.closeModal('modal-rest-timer');
+        }, 3000);
+    }
+
+    skipRest() {
+        if (this.restTimerInterval) {
+            clearInterval(this.restTimerInterval);
+            this.restTimerInterval = null;
+        }
+        this.closeModal('modal-rest-timer');
+    }
+
+    playNotificationSound() {
+        // Create a simple beep sound using Web Audio API
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        } catch (error) {
+            console.log('Could not play notification sound:', error);
+        }
     }
 
     // EXERCISE SEARCH
@@ -474,16 +611,133 @@ class FitBuddyApp {
     }
 
     addExerciseToWorkout(exercise) {
+        // Store the exercise being configured
+        this.exerciseBeingConfigured = exercise;
+        this.plannedSets = [];
+
+        // Open configuration modal
+        this.openExerciseConfigModal(exercise);
+        this.closeModal('modal-exercise-search');
+    }
+
+    openExerciseConfigModal(exercise) {
+        // Set exercise name
+        document.getElementById('exercise-config-name').value = exercise.name;
+
+        // Set preview image
+        const previewImg = document.getElementById('exercise-preview-gif');
+        if (exercise.gifUrl) {
+            previewImg.src = exercise.gifUrl;
+            previewImg.style.display = 'block';
+        } else {
+            previewImg.style.display = 'none';
+        }
+
+        // Reset rest time
+        document.getElementById('exercise-rest-time').value = '90';
+
+        // Reset notes
+        document.getElementById('exercise-config-notes').value = '';
+
+        // Clear planned sets
+        this.plannedSets = [];
+        this.renderPlannedSets();
+
+        this.openModal('modal-configure-exercise');
+    }
+
+    renderPlannedSets() {
+        const container = document.getElementById('planned-sets-list');
+
+        if (this.plannedSets.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No hay series planificadas. Haz clic en "+ Añadir Serie" para agregar.</p>';
+            return;
+        }
+
+        container.innerHTML = this.plannedSets.map((set, index) => `
+            <div class="planned-set-item" data-index="${index}">
+                <div class="planned-set-number">${index + 1}</div>
+                <div class="planned-set-inputs">
+                    <input type="number" placeholder="Peso (kg)" step="0.5" value="${set.weight || ''}" data-field="weight">
+                    <input type="number" placeholder="Reps" value="${set.reps || ''}" data-field="reps">
+                    <input type="number" placeholder="RIR" min="0" max="10" value="${set.rir || ''}" data-field="rir">
+                </div>
+                <button class="planned-set-remove" data-index="${index}">×</button>
+            </div>
+        `).join('');
+
+        // Add event listeners for inputs
+        container.querySelectorAll('.planned-set-item').forEach(item => {
+            const index = parseInt(item.dataset.index);
+
+            item.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const field = e.target.dataset.field;
+                    const value = e.target.value;
+
+                    if (field === 'weight') {
+                        this.plannedSets[index].weight = parseFloat(value) || 0;
+                    } else if (field === 'reps') {
+                        this.plannedSets[index].reps = parseInt(value) || 0;
+                    } else if (field === 'rir') {
+                        this.plannedSets[index].rir = parseInt(value) || 0;
+                    }
+                });
+            });
+        });
+
+        // Add event listeners for remove buttons
+        container.querySelectorAll('.planned-set-remove').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.target.dataset.index);
+                this.removePlannedSet(index);
+            });
+        });
+    }
+
+    addPlannedSet() {
+        this.plannedSets.push({
+            weight: 0,
+            reps: 0,
+            rir: 0
+        });
+        this.renderPlannedSets();
+    }
+
+    removePlannedSet(index) {
+        this.plannedSets.splice(index, 1);
+        this.renderPlannedSets();
+    }
+
+    saveExerciseConfiguration() {
+        const name = document.getElementById('exercise-config-name').value.trim();
+        const restTime = parseInt(document.getElementById('exercise-rest-time').value) || 90;
+        const notes = document.getElementById('exercise-config-notes').value.trim();
+
+        if (!name) {
+            this.showToast('Por favor, introduce un nombre para el ejercicio', 'error');
+            return;
+        }
+
+        // Add exercise to workout with configuration
         this.currentWorkout.exercises.push({
-            id: exercise.id,
-            name: exercise.name,
-            description: exercise.description,
+            id: this.exerciseBeingConfigured.id,
+            name: name,
+            description: this.exerciseBeingConfigured.description,
+            gifUrl: this.exerciseBeingConfigured.gifUrl,
+            restTime: restTime,
+            notes: notes,
+            plannedSets: this.plannedSets.length > 0 ? [...this.plannedSets] : [],
             sets: []
         });
 
         this.renderExercisesInModal();
-        this.closeModal('modal-exercise-search');
-        this.showToast(`${exercise.name} añadido`, 'success');
+        this.closeModal('modal-configure-exercise');
+        this.showToast(`${name} añadido`, 'success');
+
+        // Reset state
+        this.exerciseBeingConfigured = null;
+        this.plannedSets = [];
     }
 
     // MEASUREMENTS

@@ -621,6 +621,123 @@ body {
     }
 }
 
+/* Exercise Configuration Modal */
+.modal-large {
+    max-width: 700px !important;
+}
+
+.modal-small {
+    max-width: 400px !important;
+}
+
+.exercise-preview {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--background-dark);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.exercise-preview img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+}
+
+.planned-sets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.planned-set-item {
+    background: var(--background-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.planned-set-number {
+    background: var(--primary-color);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.planned-set-inputs {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.planned-set-inputs input,
+.planned-set-inputs select {
+    flex: 1;
+    min-width: 80px;
+    background: var(--background-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.planned-set-inputs input:focus,
+.planned-set-inputs select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.planned-set-remove {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.planned-set-remove:hover {
+    opacity: 0.8;
+}
+
+/* Rest Timer */
+#rest-timer-display {
+    font-size: 72px;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-variant-numeric: tabular-nums;
+}
+
+#rest-timer-display.warning {
+    color: var(--warning-color);
+}
+
+#rest-timer-display.finished {
+    color: var(--success-color);
+}
+
 /* Responsive */
 @media (min-width: 768px) {
     .modal-content {
