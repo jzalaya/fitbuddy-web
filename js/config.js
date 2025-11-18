@@ -25,9 +25,14 @@ const CONFIG = {
 
 // Helper function to check if configuration is complete
 function isConfigured() {
-    return CONFIG.apiKey !== 'AIzaSyCsuyUoKu3joYfqPTMbfTCFNEaEUkIv0lw' &&
-           CONFIG.clientId !== '95524752411-aomlekqp6tf9bu65d3c21ofkr9sbar4l.apps.googleusercontent.com' &&
-           CONFIG.spreadsheetId !== '1-y14U1aeaP_-8OoD5YNj6zKoZwO8ELDDMVHoVnnA8oA' &&
+    // Check if values look like placeholders (start and end with __)
+    const looksLikePlaceholder = (value) => {
+        return typeof value === 'string' && value.startsWith('__') && value.endsWith('__');
+    };
+
+    return !looksLikePlaceholder(CONFIG.apiKey) &&
+           !looksLikePlaceholder(CONFIG.clientId) &&
+           !looksLikePlaceholder(CONFIG.spreadsheetId) &&
            CONFIG.apiKey !== '' &&
            CONFIG.clientId !== '' &&
            CONFIG.spreadsheetId !== '';
