@@ -1,54 +1,105 @@
-// Google Sheets Integration Module
+// Google Sheets Integration Module using Google Identity Services (GIS)
 class SheetsManager {
     constructor() {
         this.isSignedIn = false;
         this.isInitialized = false;
+        this.accessToken = null;
+        this.tokenClient = null;
     }
 
     // Initialize Google API
     async init() {
         return new Promise((resolve, reject) => {
-            gapi.load('client:auth2', async () => {
-                try {
-                    await gapi.client.init({
-                        apiKey: CONFIG.apiKey,
-                        clientId: CONFIG.clientId,
-                        discoveryDocs: CONFIG.discoveryDocs,
-                        scope: CONFIG.scope
-                    });
-
-                    this.isInitialized = true;
-
-                    // Listen for sign-in state changes
-                    gapi.auth2.getAuthInstance().isSignedIn.listen((isSignedIn) => {
-                        this.isSignedIn = isSignedIn;
-                    });
-
-                    this.isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
-                    resolve(this.isSignedIn);
-                } catch (error) {
-                    reject(error);
+            // Wait for both gapi and google (GIS) to load
+            const checkLibraries = () => {
+                if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
+                    this.initializeGapi()
+                        .then(() => resolve(this.isSignedIn))
+                        .catch(reject);
+                } else {
+                    setTimeout(checkLibraries, 100);
                 }
-            });
+            };
+            checkLibraries();
         });
+    }
+
+    async initializeGapi() {
+        // Load the Google API client
+        await new Promise((resolve) => gapi.load('client', resolve));
+
+        // Initialize the Google API client
+        await gapi.client.init({
+            apiKey: CONFIG.apiKey,
+            discoveryDocs: CONFIG.discoveryDocs
+        });
+
+        // Initialize the OAuth 2.0 token client
+        this.tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CONFIG.clientId,
+            scope: CONFIG.scope,
+            callback: (response) => {
+                if (response.error) {
+                    console.error('Token error:', response);
+                    this.isSignedIn = false;
+                    return;
+                }
+                this.accessToken = response.access_token;
+                this.isSignedIn = true;
+                gapi.client.setToken({ access_token: this.accessToken });
+            },
+        });
+
+        this.isInitialized = true;
     }
 
     // Sign in to Google
     async signIn() {
-        try {
-            await gapi.auth2.getAuthInstance().signIn();
-            this.isSignedIn = true;
-            return true;
-        } catch (error) {
-            console.error('Error signing in:', error);
-            return false;
-        }
+        return new Promise((resolve, reject) => {
+            if (!this.tokenClient) {
+                reject(new Error('Token client not initialized'));
+                return;
+            }
+
+            // Set callback for this specific sign-in request
+            const originalCallback = this.tokenClient.callback;
+            this.tokenClient.callback = (response) => {
+                // Restore original callback
+                this.tokenClient.callback = originalCallback;
+
+                if (response.error) {
+                    console.error('Error signing in:', response);
+                    reject(response);
+                    return;
+                }
+
+                this.accessToken = response.access_token;
+                this.isSignedIn = true;
+                gapi.client.setToken({ access_token: this.accessToken });
+
+                // Call original callback if it exists
+                if (originalCallback) {
+                    originalCallback(response);
+                }
+
+                resolve(true);
+            };
+
+            // Request access token
+            this.tokenClient.requestAccessToken({ prompt: '' });
+        });
     }
 
     // Sign out from Google
     signOut() {
-        gapi.auth2.getAuthInstance().signOut();
+        if (this.accessToken) {
+            google.accounts.oauth2.revoke(this.accessToken, () => {
+                console.log('Token revoked');
+            });
+        }
+        this.accessToken = null;
         this.isSignedIn = false;
+        gapi.client.setToken(null);
     }
 
     // Read data from a sheet
